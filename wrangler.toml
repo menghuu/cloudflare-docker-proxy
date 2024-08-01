@@ -22,6 +22,8 @@ routes = [
   # { pattern = "ghcr.docker.proxy.meng.hu", custom_domain = true },
   # { pattern = "cloudsmith.docker.proxy.meng.hu", custom_domain = true },
   # { pattern = "ecr.docker.proxy.meng.hu", custom_domain = true },
+
+  { pattern = "docker-staging.docker.proxy.meng.hu", custom_domain = true },
 ]
 
 [env.production.vars]

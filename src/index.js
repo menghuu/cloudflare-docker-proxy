@@ -17,7 +17,7 @@ const routes = {
   // "ecr.docker.proxy.meng.hu": "https://public.ecr.aws",
 
   // staging
-  // "docker-staging.docker.proxy.meng.hu": dockerHub,
+  "docker-staging.docker.proxy.meng.hu": dockerHub,
 };
 
 function routeByHosts(host) {
