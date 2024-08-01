@@ -7,17 +7,17 @@ const dockerHub = "https://registry-1.docker.io";
 
 const routes = {
   // production
-  "docker.libcuda.so": dockerHub,
-  "quay.libcuda.so": "https://quay.io",
-  "gcr.libcuda.so": "https://gcr.io",
-  "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
-  "k8s.libcuda.so": "https://registry.k8s.io",
-  "ghcr.libcuda.so": "https://ghcr.io",
-  "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
-  "ecr.libcuda.so": "https://public.ecr.aws",
+  "hub.docker.proxy.meng.hu": dockerHub,
+  // "quay.docker.proxy.meng.hu": "https://quay.io",
+  // "gcr.docker.proxy.meng.hu": "https://gcr.io",
+  // "k8s-gcr.docker.proxy.meng.hu": "https://k8s.gcr.io",
+  // "k8s.docker.proxy.meng.hu": "https://registry.k8s.io",
+  // "ghcr.docker.proxy.meng.hu": "https://ghcr.io",
+  // "cloudsmith.docker.proxy.meng.hu": "https://docker.cloudsmith.io",
+  // "ecr.docker.proxy.meng.hu": "https://public.ecr.aws",
 
   // staging
-  "docker-staging.libcuda.so": dockerHub,
+  // "docker-staging.docker.proxy.meng.hu": dockerHub,
 };
 
 function routeByHosts(host) {
@@ -40,7 +40,7 @@ async function handleRequest(request) {
       }),
       {
         status: 404,
-      }
+      },
     );
   }
   const isDockerHub = upstream == dockerHub;
@@ -61,12 +61,12 @@ async function handleRequest(request) {
       if (MODE == "debug") {
         headers.set(
           "Www-Authenticate",
-          `Bearer realm="http://${url.host}/v2/auth",service="cloudflare-docker-proxy"`
+          `Bearer realm="http://${url.host}/v2/auth",service="cloudflare-docker-proxy"`,
         );
       } else {
         headers.set(
           "Www-Authenticate",
-          `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`
+          `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`,
         );
       }
       return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
