@@ -24,7 +24,7 @@ function routeByHosts(host) {
   if (host in routes) {
     return routes[host];
   }
-  if (MODE == "debug") {
+  if (MODE == "dev") {
     return TARGET_UPSTREAM;
   }
   return "";
@@ -58,17 +58,16 @@ async function handleRequest(request) {
       redirect: "follow",
     });
     if (resp.status === 401) {
-      if (MODE == "debug") {
-        headers.set(
-          "Www-Authenticate",
-          `Bearer realm="http://${url.host}/v2/auth",service="cloudflare-docker-proxy"`,
-        );
+      console.log(`访问 upstream（${newUrl}）时需要重新获取 token`)
+      let bearer;
+      if (MODE == "dev") {
+        bearer = `Bearer realm="http://${url.host}/v2/auth",service="cloudflare-docker-proxy"`;
+        headers.set("Www-Authenticate", bearer,);
       } else {
-        headers.set(
-          "Www-Authenticate",
-          `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`,
-        );
+        bearer = `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`;
+        headers.set("Www-Authenticate", bearer,);
       }
+      console.log(`尝试返回 token 申请链接(${bearer})`);
       return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
         status: 401,
         headers: headers,
