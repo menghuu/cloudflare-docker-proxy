@@ -1,16 +1,3 @@
-
-
-async function justForward(upstreamURL, request) {
-  return await fetch(new Request(
-    upstreamURL, {
-    headers: request.headers,
-    method: request.method, // 理论上获取 token 就应该使用 GET，但是万一呢
-    body: request.body,  // 一般 body 都是空的
-    redirect: "follow",
-  }
-  ))
-}
-
 export default {
   async fetch(request, env) {
     const DEFAULT_DOCKER_REGISTRY_URL = env.DEFAULT_DOCKER_REGISTRY_URL || 'https://index.docker.io';
@@ -61,12 +48,12 @@ export default {
       /v2/xxxxxx 直接访问 upstream/v2/xxxxxx
         如果遇到 401
           1 返回 cf bearer
-            优势是不怕 auth.docker.io 被墙，
+            优势是不怕 auth.docker.io/token 无法访问，
             并且能够借助 cf 的节点 ip 不停在变的优势，间接突破 ip 访问限制
             使用环境变量 FORWARD_TOKEN = true 来开启这个功能，默认使用 cf 转发 token
           2 返回 upstream 的 bearer
             优势是如果本地 login 了（如果能够 login 的话，我没有测试过），访问限制就是你的用户限制，而不是 ip 限制了
-            还是推荐使用这个方法，毕竟 auth.docker.io 并没有被墙，登录了自己的账号，也能够访问自己的非公开镜像
+            还是推荐使用这个方法，毕竟 auth.docker.io/token 可以访问，登录了自己的账号，也能够访问自己的非公开镜像
       其他的/xxxxx，直接访问 upstream/xxxx
     */
     let upstreamURL;
@@ -117,7 +104,7 @@ export default {
           const service = wwwAuthenticate.match(servicePattern)?.get('service') ?? DEFAULT_DOCKER_SERVICE;
           const scope = wwwAuthenticate.match(scopePattern)?.get('scope');
 
-          const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ?? `,scope=${scope}`);
+          const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ? `,scope=${scope}` : '');
           const headers = new Headers({ 'www-authenticate': bearer });
 
           console.log(`尝试返回 cf token 申请链接(${bearer})`);
@@ -135,4 +122,15 @@ export default {
       return upstreamResponse;
     }
   },
+}
+
+async function justForward(upstreamURL, request) {
+  return await fetch(new Request(
+    upstreamURL, {
+    headers: request.headers,
+    method: request.method, // 理论上获取 token 就应该使用 GET，但是万一呢
+    body: request.body,  // 一般 body 都是空的
+    redirect: "follow",
+  }
+  ))
 }
