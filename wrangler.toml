@@ -19,8 +19,6 @@ routes = [
   # { pattern = "ghcr.docker.proxy.meng.hu", custom_domain = true },
   # { pattern = "cloudsmith.docker.proxy.meng.hu", custom_domain = true },
   # { pattern = "ecr.docker.proxy.meng.hu", custom_domain = true },
-
-  { pattern = "docker-staging.docker.proxy.meng.hu", custom_domain = true },
 ]
 
 [env.production.vars]
@@ -29,7 +27,7 @@ TARGET_UPSTREAM = ""
 
 [env.staging]
 name = "cloudflare-docker-proxy-staging"
-# route = { pattern = "docker-staging.libcuda.so", custom_domain = true }
+route = { pattern = "docker-staging.docker.proxy.meng.hu", custom_domain = true }
 
 [env.staging.vars]
 MODE = "staging"
