@@ -9,6 +9,7 @@ export default {
 
     let upstream;
     const ipv4Pattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    const ipv6Pattern = /^([[:xdigit:]]{1,4}(?::[[:xdigit:]]{1,4}){7}|::|:(?::[[:xdigit:]]{1,4}){1,6}|[[:xdigit:]]{1,4}:(?::[[:xdigit:]]{1,4}){1,5}|(?:[[:xdigit:]]{1,4}:){2}(?::[[:xdigit:]]{1,4}){1,4}|(?:[[:xdigit:]]{1,4}:){3}(?::[[:xdigit:]]{1,4}){1,3}|(?:[[:xdigit:]]{1,4}:){4}(?::[[:xdigit:]]{1,4}){1,2}|(?:[[:xdigit:]]{1,4}:){5}:[[:xdigit:]]{1,4}|(?:[[:xdigit:]]{1,4}:){1,6}:)$/
     const subDomainVSUpstreamDomain = {
       'hub': DEFAULT_DOCKER_REGISTRY_URL,
 
@@ -22,7 +23,7 @@ export default {
 
       'docker-staging': DEFAULT_DOCKER_REGISTRY_URL
     };
-    if (url.hostname.match(ipv4Pattern)) {
+    if (url.hostname.match(ipv4Pattern) || url.hostname.match(ipv6Pattern)) {
       // 使用默认的 docker registry
       upstream = DEFAULT_DOCKER_REGISTRY_URL;
     } else {
