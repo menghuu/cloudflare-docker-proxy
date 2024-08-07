@@ -23,7 +23,9 @@ routes = [
 
 [env.production.vars]
 MODE = "production"
-TARGET_UPSTREAM = ""
+DEFAULT_DOCKER_REGISTRY_URL = "https://index.docker.io"
+DEFAULT_DOCKER_REGISTRY_AUTH_URL = "https://auth.docker.io/token"
+FORWARD_TOKEN = true
 
 [env.staging]
 name = "cloudflare-docker-proxy-staging"
@@ -31,4 +33,6 @@ route = { pattern = "docker-staging.docker.proxy.meng.hu", custom_domain = true 
 
 [env.staging.vars]
 MODE = "staging"
-TARGET_UPSTREAM = ""
+DEFAULT_DOCKER_REGISTRY_URL = "https://index.docker.io"
+DEFAULT_DOCKER_REGISTRY_AUTH_URL = "https://auth.docker.io/token"
+FORWARD_TOKEN = false

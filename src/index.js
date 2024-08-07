@@ -1,154 +1,129 @@
-addEventListener("fetch", (event) => {
-  event.passThroughOnException();
-  event.respondWith(handleRequest(event.request));
-});
 
-const dockerHub = "https://registry-1.docker.io";
 
-const routes = {
-  // production
-  "hub.docker.proxy.meng.hu": dockerHub,
-  // "quay.docker.proxy.meng.hu": "https://quay.io",
-  // "gcr.docker.proxy.meng.hu": "https://gcr.io",
-  // "k8s-gcr.docker.proxy.meng.hu": "https://k8s.gcr.io",
-  // "k8s.docker.proxy.meng.hu": "https://registry.k8s.io",
-  // "ghcr.docker.proxy.meng.hu": "https://ghcr.io",
-  // "cloudsmith.docker.proxy.meng.hu": "https://docker.cloudsmith.io",
-  // "ecr.docker.proxy.meng.hu": "https://public.ecr.aws",
-
-  // staging
-  "docker-staging.docker.proxy.meng.hu": dockerHub,
-};
-
-function routeByHosts(host) {
-  if (host in routes) {
-    return routes[host];
-  }
-  if (MODE == "dev") {
-    return TARGET_UPSTREAM;
-  }
-  return "";
-}
-
-async function handleRequest(request) {
-  const url = new URL(request.url);
-  const upstream = routeByHosts(url.hostname);
-  if (upstream === "") {
-    return new Response(
-      JSON.stringify({
-        routes: routes,
-      }),
-      {
-        status: 404,
-      },
-    );
-  }
-  const isDockerHub = upstream == dockerHub;
-  const authorization = request.headers.get("Authorization");
-  if (url.pathname == "/v2/") {
-    const newUrl = new URL(upstream + "/v2/");
-    const headers = new Headers();
-    if (authorization) {
-      headers.set("Authorization", authorization);
-    }
-    // check if need to authenticate
-    const resp = await fetch(newUrl.toString(), {
-      method: "GET",
-      headers: headers,
-      redirect: "follow",
-    });
-    if (resp.status === 401) {
-      console.log(`访问 upstream（${newUrl}）时需要重新获取 token`)
-      let bearer;
-      if (MODE == "dev") {
-        bearer = `Bearer realm="http://${url.host}/v2/auth",service="cloudflare-docker-proxy"`;
-        headers.set("Www-Authenticate", bearer,);
-      } else {
-        bearer = `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`;
-        headers.set("Www-Authenticate", bearer,);
-      }
-      console.log(`尝试返回 token 申请链接(${bearer})`);
-      return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
-        status: 401,
-        headers: headers,
-      });
-    } else {
-      return resp;
-    }
-  }
-  // get token
-  if (url.pathname == "/v2/auth") {
-    const newUrl = new URL(upstream + "/v2/");
-    const resp = await fetch(newUrl.toString(), {
-      method: "GET",
-      redirect: "follow",
-    });
-    if (resp.status !== 401) {
-      return resp;
-    }
-    const authenticateStr = resp.headers.get("WWW-Authenticate");
-    if (authenticateStr === null) {
-      return resp;
-    }
-    const wwwAuthenticate = parseAuthenticate(authenticateStr);
-    let scope = url.searchParams.get("scope");
-    // autocomplete repo part into scope for DockerHub library images
-    // Example: repository:busybox:pull => repository:library/busybox:pull
-    if (scope && isDockerHub) {
-      let scopeParts = scope.split(":");
-      if (scopeParts.length == 3 && !scopeParts[1].includes("/")) {
-        scopeParts[1] = "library/" + scopeParts[1];
-        scope = scopeParts.join(":");
-      }
-    }
-    return await fetchToken(wwwAuthenticate, scope, authorization);
-  }
-  // redirect for DockerHub library images
-  // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
-  if (isDockerHub) {
-    const pathParts = url.pathname.split("/");
-    if (pathParts.length == 5) {
-      pathParts.splice(2, 0, "library");
-      const redirectUrl = new URL(url);
-      redirectUrl.pathname = pathParts.join("/");
-      return Response.redirect(redirectUrl, 301);
-    }
-  }
-  // foward requests
-  const newUrl = new URL(upstream + url.pathname);
-  const newReq = new Request(newUrl, {
-    method: request.method,
+async function justForward(upstreamURL, request) {
+  return await fetch(new Request(
+    upstreamURL, {
     headers: request.headers,
+    method: request.method, // 理论上获取 token 就应该使用 GET，但是万一呢
+    body: request.body,  // 一般 body 都是空的
     redirect: "follow",
-  });
-  return await fetch(newReq);
+  }
+  ))
 }
 
-function parseAuthenticate(authenticateStr) {
-  // sample: Bearer realm="https://auth.ipv6.docker.com/token",service="registry.docker.io"
-  // match strings after =" and before "
-  const re = /(?<=\=")(?:\\.|[^"\\])*(?=")/g;
-  const matches = authenticateStr.match(re);
-  if (matches == null || matches.length < 2) {
-    throw new Error(`invalid Www-Authenticate Header: ${authenticateStr}`);
-  }
-  return {
-    realm: matches[0],
-    service: matches[1],
-  };
-}
+export default {
+  async fetch(request, env) {
+    const DEFAULT_DOCKER_REGISTRY_URL = env.DEFAULT_DOCKER_REGISTRY_URL || 'https://index.docker.io';
+    const DEFAULT_DOCKER_REGISTRY_AUTH_URL = env.DEFAULT_DOCKER_REGISTRY_AUTH_URL || 'https://auth.docker.io/token';
+    const DEFAULT_DOCKER_SERVICE = env.DEFAULT_DOCKER_SERVICE ?? 'registry.docker.io';
+    const FORWARD_TOKEN = env.FORWARD_TOKEN ?? true;
 
-async function fetchToken(wwwAuthenticate, scope, authorization) {
-  const url = new URL(wwwAuthenticate.realm);
-  if (wwwAuthenticate.service.length) {
-    url.searchParams.set("service", wwwAuthenticate.service);
-  }
-  if (scope) {
-    url.searchParams.set("scope", scope);
-  }
-  const headers = new Headers();
-  if (authorization) {
-    headers.set("Authorization", authorization);
-  }
-  return await fetch(url, { method: "GET", headers: headers });
+    const url = new URL(request.url);
+
+    let upstream;
+    const ipv4Pattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    const subDomainVSUpstreamDomain = {
+      'hub': DEFAULT_DOCKER_REGISTRY_URL,
+      'docker-staging': DEFAULT_DOCKER_REGISTRY_URL
+    };
+    if (url.hostname.match(ipv4Pattern)) {
+      // 使用默认的 docker registry
+      upstream = DEFAULT_DOCKER_REGISTRY_URL;
+    } else {
+      upstream = subDomainVSUpstreamDomain[url.hostname.split('.')[0]] ?? "";
+    }
+
+    console.log(`访问 cf 链接(${url}) 将会真实访问到域名 ${upstream}(具体的真实访问链接后面给出)`);
+
+    if (upstream === "") {
+      return new Response(
+        JSON.stringify({
+          subDomainVSUpstreamDomain
+        }),
+        {
+          status: 404,
+        },
+      );
+    }
+
+    /*
+      /auth 使用 cf 来代理获取 token
+      /v2/xxx/blobs/xxxxxxxx 或者 /v2/xxxx/manifests/xxxxx 那么就重定向到 /v2/library/xxx/blobs/xxxxxxxx 或者 /v2/library/xxxx/manifests/xxxxx
+      /v2/xxxxxx 直接访问 upstream/v2/xxxxxx
+        如果遇到 401
+          1 返回 cf bearer
+            优势是不怕 auth.docker.io 被墙，
+            并且能够借助 cf 的节点 ip 不停在变的优势，间接突破 ip 访问限制
+            使用环境变量 FORWARD_TOKEN = true 来开启这个功能，默认使用 cf 转发 token
+          2 返回 upstream 的 bearer
+            优势是如果本地 login 了（如果能够 login 的话，我没有测试过），访问限制就是你的用户限制，而不是 ip 限制了
+            还是推荐使用这个方法，毕竟 auth.docker.io 并没有被墙，登录了自己的账号，也能够访问自己的非公开镜像
+      其他的/xxxxx，直接访问 upstream/xxxx
+    */
+    let upstreamURL;
+    if (url.pathname.startsWith('/auth')) {
+      const upstreamRealm = url.searchParams.get('upstreamRealm') ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
+      const service = url.searchParams.get('service') ?? DEFAULT_DOCKER_SERVICE;
+      const scope = url.searchParams.get('scope');
+
+      upstreamURL = new URL(upstreamRealm);
+      upstreamURL.searchParams.set('service', service);
+      if (scope) upstreamURL.searchParams.set('scope', scope);
+    } else {
+      upstreamURL = new URL(upstream + url.pathname + url.search);
+    }
+
+    const pathParts = url.pathname.split('/');
+    const v2Index = pathParts.indexOf('v2');
+    const manifestsIndex = pathParts.indexOf('manifests');
+    const blobsIndex = pathParts.indexOf('blobs');
+    if (v2Index !== -1) {
+      const _index = manifestsIndex === -1 ? blobsIndex : manifestsIndex;
+      if (_index !== -1) {
+        if (pathParts.slice(v2Index + 1, _index).length === 1) {
+          // 没有 repo, 添加 library 这个 repo
+          pathParts.splice(v2Index + 1, 0, 'library');
+          const redirectURL = new URL(url.origin + pathParts.join('/') + url.search);
+          return Response.redirect(redirectURL, 301);
+        }
+      }
+    }
+
+    console.log(`访问 cf(${url}) 即将访问真实的链接 ${upstreamURL}`);
+    // console.log(`访问 cf 时带的 authorization header 是 ${request.headers.get('authorization')}`);
+    let upstreamResponse = justForward(upstreamURL, request);
+
+
+    if (url.pathname.startsWith('/v2')) {
+      if (upstreamResponse.status === 401) {
+        console.log(`访问 upstream（${url}）时需要重新获取 token`)
+
+        if (FORWARD_TOKEN) {
+          const realmPattern = /realm[^=]*=[^"']*["'](?<realm>[^"']+)["']/;
+          const servicePattern = /service[^=]*=[^"']*["'](?<service>[^"']+)["']/;
+          const scopePattern = /scope[^=]*=[^"']*["'](?<scope>[^"']+)["']/;
+
+          const wwwAuthenticate = request.headers.get('www-authenticate') ?? '';
+          const realm = wwwAuthenticate.match(realmPattern)?.get('realm') ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
+          const service = wwwAuthenticate.match(servicePattern)?.get('service') ?? DEFAULT_DOCKER_SERVICE;
+          const scope = wwwAuthenticate.match(scopePattern)?.get('scope');
+
+          const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ?? `,scope=${scope}`);
+          const headers = new Headers({ 'www-authenticate': bearer });
+
+          console.log(`尝试返回 cf token 申请链接(${bearer})`);
+          return new Response(JSON.stringify({ "errors": [{ "code": "UNAUTHORIZED", "message": "authentication required", "detail": null }] }), {
+            status: 401,
+            headers: headers,
+          });
+        } else {
+          return upstreamResponse;
+        }
+      } else {
+        return upstreamResponse;
+      }
+    } else {
+      return upstreamResponse;
+    }
+  },
 }
