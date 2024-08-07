@@ -22,3 +22,7 @@
 - `FORWARD_TOKEN` 如果为 true（默认为 true），则会使用 cloudflare 来转发 token 申请；否则的话，使用本地 IP 申请
   - 貌似 `https://auth.docker.io/token` 可以正常访问
 - 其他的配置选项基本上无需更改
+
+## 感谢
+
+初始版本来自：[ciiiii/cloudflare-docker-proxy](https://github.com/ciiiii/cloudflare-docker-proxy)
