@@ -25,7 +25,7 @@ routes = [
 MODE = "production"
 DEFAULT_DOCKER_REGISTRY_URL = "https://index.docker.io"
 DEFAULT_DOCKER_REGISTRY_AUTH_URL = "https://auth.docker.io/token"
-FORWARD_TOKEN = true
+FORWARD_TOKEN = false
 
 [env.staging]
 name = "cloudflare-docker-proxy-staging"
