@@ -4,36 +4,21 @@
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/menghuu/cloudflare-docker-proxy)
 
-> If you're looking for proxy for helm, maybe you can try [cloudflare-helm-proxy](https://github.com/ciiiii/cloudflare-helm-proxy).
+## 部署
 
-## Deploy
+1. 点击 "Deploy With Workers" 按钮（没有测试过）
+2. 或者添加 cloudflare 的 `CF_API_TOKEN` 和 `CF_ACCOUNT_ID` 到 github 的 action 配置中。使用 github action 来自动部署
 
-1. click the "Deploy With Workers" button
-2. follow the instructions to fork and deploy
-3. update routes as you requirement
+## 一些配置项解释
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/menghuu/cloudflare-docker-proxy)
+配置项位于 [wrangler.toml](./wrangler.toml) 和 `.dev.vars`(主要用于本地开发使用)
 
-## Routes configuration tutorial
-
-1. use cloudflare worker host: only support proxy one registry
-   ```javascript
-   const routes = {
-     "${workername}.${username}.workers.dev/": "https://registry-1.docker.io",
-   };
-   ```
-2. use custom domain: support proxy multiple registries route by host
-   - host your domain DNS on cloudflare
-   - add `A` record of xxx.example.com to `192.0.2.1`
-   - deploy this project to cloudflare workers
-   - add `xxx.example.com/*` to HTTP routes of workers
-   - add more records and modify the config as you need
-   ```javascript
-   const routes = {
-     "docker.libcuda.so": "https://registry-1.docker.io",
-     "quay.libcuda.so": "https://quay.io",
-     "gcr.libcuda.so": "https://k8s.gcr.io",
-     "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
-     "ghcr.libcuda.so": "https://ghcr.io",
-   };
-   ```
+- `.dev.vars` 文件定义了用于本地开发(`npx wrangler dev`)时使用的环境变量
+- `staging` 阶段是指：`npx wrangler deploy --env=staging` 会自动创建一个新的 cloudflare worker 项目，并用这个项目来做线上的测试
+- 如果使用 github action，会使用 `production` 阶段的配置
+- 配置选项中的 `routes` 或者 `route` 中配置成例子中的那样需要满足：
+  - 将域名修改成你托管在 cloudflare 中的域名。
+  - 需要保持域名最前面的前缀（也就是 `hub`/`gcr` 等子域名）是和 [index.js](./src/index.js) 中的代码保持一致
+- `FORWARD_TOKEN` 如果为 true（默认为 true），则会使用 cloudflare 来转发 token 申请；否则的话，使用本地 IP 申请
+  - 貌似 `https://auth.docker.io/token` 可以正常访问
+- 其他的配置选项基本上无需更改
