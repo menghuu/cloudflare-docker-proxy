@@ -24,6 +24,15 @@ export default {
     const ipv4Pattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
     const subDomainVSUpstreamDomain = {
       'hub': DEFAULT_DOCKER_REGISTRY_URL,
+
+      "quay": "https://quay.io",
+      "gcr": "https://gcr.io",
+      "k8s-gcr": "https://k8s.gcr.io",
+      "k8s": "https://registry.k8s.io",
+      "ghcr": "https://ghcr.io",
+      "cloudsmith": "https://docker.cloudsmith.io",
+      "ecr": "https://public.ecr.aws",
+
       'docker-staging': DEFAULT_DOCKER_REGISTRY_URL
     };
     if (url.hostname.match(ipv4Pattern)) {
