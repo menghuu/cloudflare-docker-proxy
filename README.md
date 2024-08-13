@@ -6,8 +6,9 @@
 
 ## 部署
 
-1. 点击 "Deploy With Workers" 按钮（没有测试过）
-2. 或者添加 cloudflare 的 `CF_API_TOKEN` 和 `CF_ACCOUNT_ID` 到 github 的 action 配置中。使用 github action 来自动部署
+1. ~~点击 "Deploy With Workers" 按钮（没有测试过）~~
+2. fork 后添加 cloudflare 的 `CF_API_TOKEN`, `CF_ACCOUNT_ID` 以及 `CF_BASE_DOMAIN` 到 github 的 action 配置中。使用 github action 来自动部署
+3. 自行修改配置选项后，拷贝到 cloudflare 的 worker 的代码编辑中
 
 ## 一些配置项解释
 
@@ -20,6 +21,7 @@
   - 将域名修改成你托管在 cloudflare 中的域名。
   - 需要保持域名最前面的前缀（也就是 `hub`/`gcr` 等子域名）是和 [index.js](./src/index.js) 中的代码保持一致
 - `FORWARD_TOKEN` 如果为 true（默认为 true），则会使用 cloudflare 来转发 token 申请；否则的话，使用本地 IP 申请
+- 如果使用 github action 部署，请一定要将 `CF_BASE_DOMAIN` 设置成你自己托管在 cloudflare 中的域名
   - 貌似 `https://auth.docker.io/token` 可以正常访问
 - 其他的配置选项基本上无需更改
 

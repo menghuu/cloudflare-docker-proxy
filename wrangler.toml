@@ -11,14 +11,14 @@ local_protocol = "http"
 name = "cloudflare-docker-proxy"
 
 routes = [
-  { pattern = "hub.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "quay.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "gcr.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "k8s-gcr.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "k8s.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "ghcr.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "cloudsmith.docker.proxy.meng.hu", custom_domain = true },
-  # { pattern = "ecr.docker.proxy.meng.hu", custom_domain = true },
+  { pattern = "hub.your.domain", custom_domain = true },
+  # { pattern = "quay.your.domain", custom_domain = true },
+  # { pattern = "gcr.your.domain", custom_domain = true },
+  # { pattern = "k8s-gcr.your.domain", custom_domain = true },
+  # { pattern = "k8s.your.domain", custom_domain = true },
+  # { pattern = "ghcr.your.domain", custom_domain = true },
+  # { pattern = "cloudsmith.your.domain", custom_domain = true },
+  # { pattern = "ecr.your.domain", custom_domain = true },
 ]
 
 [env.production.vars]
@@ -29,7 +29,7 @@ FORWARD_TOKEN = false
 
 [env.staging]
 name = "cloudflare-docker-proxy-staging"
-route = { pattern = "docker-staging.docker.proxy.meng.hu", custom_domain = true }
+route = { pattern = "docker-staging.your.domain", custom_domain = true }
 
 [env.staging.vars]
 MODE = "staging"

@@ -14,10 +14,12 @@ jobs:
     name: Build & Deploy
     steps:
       - uses: actions/checkout@v4
+      - name: replace your domain
+        run: sed -i 's_your.domain_${{ secrets.CF_BASE_DOMAIN }}_' wrangler.toml
       - name: Publish
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{secrets.CF_ACCOUNT_ID}}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: deploy --env staging --minify src/index.js
           environment: staging
