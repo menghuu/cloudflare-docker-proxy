@@ -95,7 +95,7 @@ export default {
       if (upstreamResponse.status === 401) {
         console.log(`访问 upstream（${url}）时需要重新获取 token`)
 
-        if (FORWARD_TOKEN) {
+        if (GET_TOKEN_BY_CF) {
           const realmPattern = /realm[^=]*=[^"']*["'](?<realm>[^"']+)["']/;
           const servicePattern = /service[^=]*=[^"']*["'](?<service>[^"']+)["']/;
           const scopePattern = /scope[^=]*=[^"']*["'](?<scope>[^"']+)["']/;
