@@ -87,8 +87,15 @@ export default {
     }
 
     console.log(`访问 cf(${url}) 即将访问真实的链接 ${upstreamURL}`);
-    // console.log(`访问 cf 时带的 authorization header 是 ${request.headers.get('authorization')}`);
-    let upstreamResponse = justForward(upstreamURL, request);
+    console.log(`访问 cf 时带的 authorization header 是 ${request.headers.get('authorization')}`);
+
+    let upstreamResponse = await justForward(upstreamURL, request);
+
+    // https://index.docker.io/v2/jellyfin/jellyfin/manifests/latest
+    // https://auth.docker.io
+    // https://auth.docker.io/token?scope=repository%3Ajellyfin%2Fjellyfin%3Apull&service=registry.docker.io
+
+    // console.log(`status is: ${upstreamResponse.status}; ${(await upstreamResponse).statusText}`)
 
 
     if (url.pathname.startsWith('/v2')) {
@@ -128,12 +135,13 @@ export default {
 }
 
 async function justForward(upstreamURL, request) {
-  return await fetch(new Request(
-    upstreamURL, {
-    headers: request.headers,
-    method: request.method, // 理论上获取 token 就应该使用 GET，但是万一呢
-    body: request.body,  // 一般 body 都是空的
-    redirect: "follow",
-  }
-  ))
+  return await fetch(
+    upstreamURL,
+    {
+      headers: request.headers,
+      method: request.method, // 理论上获取 token 就应该使用 GET，但是万一呢
+      body: request.body,  // 一般 body 都是空的
+      redirect: "follow",
+    }
+  )
 }
