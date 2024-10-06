@@ -110,9 +110,15 @@ export default {
 
           const wwwAuthenticate = upstreamResponse.headers.get('www-authenticate') ?? '';
           console.log(`wwwAuthenticate is ${wwwAuthenticate}; ${typeof wwwAuthenticate}`)
-          const realm = wwwAuthenticate.match(realmPattern).groups.realm ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
-          const service = wwwAuthenticate.match(servicePattern).groups.service ?? DEFAULT_DOCKER_SERVICE;
-          const scope = wwwAuthenticate.match(scopePattern).groups.scope;
+
+          const realm = wwwAuthenticate.match(realmPattern)?.groups.realm ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
+          // console.log(`realm/service/scope: ${realm}/${service}/${scope}`)
+
+          const service = wwwAuthenticate.match(servicePattern)?.groups.service ?? DEFAULT_DOCKER_SERVICE;
+          // console.log(`realm/service/scope: ${realm}/${service}/${scope}`)
+
+          const scope = wwwAuthenticate.match(scopePattern)?.groups.scope;
+          // console.log(`realm/service/scope: ${realm}/${service}/${scope}`)
 
           const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ? `,scope="${scope}"` : '');
           const headers = new Headers({ 'www-authenticate': bearer });
