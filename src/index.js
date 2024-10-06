@@ -96,16 +96,18 @@ export default {
         console.log(`访问 upstream（${url}）时需要重新获取 token`)
 
         if (GET_TOKEN_BY_CF) {
+          // Bearer realm="https://dockerproxy.cn/token",service="registry.docker.io",scope="repository:jellyfin/jellyfin:pull"
           const realmPattern = /realm[^=]*=[^"']*["'](?<realm>[^"']+)["']/;
           const servicePattern = /service[^=]*=[^"']*["'](?<service>[^"']+)["']/;
           const scopePattern = /scope[^=]*=[^"']*["'](?<scope>[^"']+)["']/;
 
-          const wwwAuthenticate = request.headers.get('www-authenticate') ?? '';
-          const realm = wwwAuthenticate.match(realmPattern)?.get('realm') ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
-          const service = wwwAuthenticate.match(servicePattern)?.get('service') ?? DEFAULT_DOCKER_SERVICE;
-          const scope = wwwAuthenticate.match(scopePattern)?.get('scope');
+          const wwwAuthenticate = upstreamResponse.headers.get('www-authenticate') ?? '';
+          console.log(`wwwAuthenticate is ${wwwAuthenticate}; ${typeof wwwAuthenticate}`)
+          const realm = wwwAuthenticate.match(realmPattern).groups.realm ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
+          const service = wwwAuthenticate.match(servicePattern).groups.service ?? DEFAULT_DOCKER_SERVICE;
+          const scope = wwwAuthenticate.match(scopePattern).groups.scope;
 
-          const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ? `,scope=${scope}` : '');
+          const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ? `,scope="${scope}"` : '');
           const headers = new Headers({ 'www-authenticate': bearer });
 
           console.log(`尝试返回 cf token 申请链接(${bearer})`);
