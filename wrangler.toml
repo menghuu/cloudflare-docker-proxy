@@ -24,6 +24,7 @@ routes = [
 [env.production.vars]
 MODE = "production"
 DEFAULT_DOCKER_REGISTRY_URL = "https://index.docker.io"
+# DEFAULT_DOCKER_REGISTRY_URL = "https://dockerproxy.cn"
 DEFAULT_DOCKER_REGISTRY_AUTH_URL = "https://auth.docker.io/token"
 GET_TOKEN_BY_CF = true
 
