@@ -59,6 +59,7 @@ export default {
     */
     let upstreamURL;
     if (url.pathname.startsWith('/auth')) {
+      console.log(`request params are: ${url.searchParams}`)
       const upstreamRealm = url.searchParams.get('upstreamRealm') ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
       const service = url.searchParams.get('service') ?? DEFAULT_DOCKER_SERVICE;
       const scope = url.searchParams.get('scope');
@@ -90,6 +91,8 @@ export default {
     console.log(`访问 cf 时带的 authorization header 是 ${request.headers.get('authorization')}`);
 
     let upstreamResponse = await justForward(upstreamURL, request);
+
+    console.log(`已经成功访问了 ${upstreamURL}`)
 
     // https://index.docker.io/v2/jellyfin/jellyfin/manifests/latest
     // https://auth.docker.io
