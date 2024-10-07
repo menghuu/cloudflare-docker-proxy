@@ -141,13 +141,14 @@ export default {
 }
 
 async function justForward(upstreamURL, request) {
-  return await fetch(
-    upstreamURL,
-    {
-      headers: request.headers,
-      method: request.method, // 理论上获取 token 就应该使用 GET，但是万一呢
-      body: request.body,  // 一般 body 都是空的
-      redirect: "follow",
-    }
-  )
+  // console.log(`body is ${request.body}; headers are ${request.headers}; method is ${request.method}`)
+  const initOptions = {
+    headers: request.headers,
+    method: request.method
+  }
+  if (request.method !== 'GET' && request.method !== 'HEAD' && !request.body) {
+    initOptions.body = request.body
+  }
+
+  return await fetch(upstreamURL, initOptions)
 }
