@@ -22,7 +22,7 @@
   - 需要保持域名最前面的前缀（也就是 `hub`/`gcr` 等子域名）是和 [index.js](./src/index.js) 中的代码保持一致
 - 如果使用 github action 部署，请一定要将 `CF_BASE_DOMAIN` 设置成你自己托管在 cloudflare 中的域名
 - `GET_TOKEN_BY_CF` 如果为 true（不设置的话，默认为 true），则会使用 cloudflare 来代理 token 申请；否则的话，使用本地 IP 申请
-  - 貌似 `https://auth.docker.io/token` 可以正常访问
+  - ~~貌似 `https://auth.docker.io/token` 可以正常访问~~
 - 其他的配置选项基本上无需更改
 
 ## 感谢
