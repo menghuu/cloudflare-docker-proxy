@@ -62,7 +62,21 @@ export default {
       console.log(`request params are: ${url.searchParams}`)
       const upstreamRealm = url.searchParams.get('upstreamRealm') ?? DEFAULT_DOCKER_REGISTRY_AUTH_URL;
       const service = url.searchParams.get('service') ?? DEFAULT_DOCKER_SERVICE;
-      const scope = url.searchParams.get('scope');
+      let scope = url.searchParams.get('scope');
+
+      if (scope) {
+        const repoPattern = /repository:(?<repo>[^:]+):/
+        const repoName = scope.match(repoPattern)?.groups.repo
+        if (repoName) {
+          if (!repoName.includes('/')) {
+            scope = scope.replace(`:${repoName}:`, `:library/${repoName}:`)
+            console.log(`在获取 token 的时候，发现 repoName(${repoName}) 格式不对；将会将 scope 修改为 ${scope}`)
+            url.searchParams.delete('scope')
+            url.searchParams.append('scope', scope)
+            return Response.redirect(url, 301)
+          }
+        }
+      }
 
       upstreamURL = new URL(upstreamRealm);
       upstreamURL.searchParams.set('service', service);
@@ -121,7 +135,7 @@ export default {
           // console.log(`realm/service/scope: ${realm}/${service}/${scope}`)
 
           const scope = wwwAuthenticate.match(scopePattern)?.groups.scope;
-          // console.log(`realm/service/scope: ${realm}/${service}/${scope}`)
+          console.log(`realm/service/scope: ${realm}/${service}/${scope}`)
 
           const bearer = `Bearer realm="http://${url.host}/auth",service="${service}",upstreamRealm="${realm}"` + (scope ? `,scope="${scope}"` : '');
           const headers = new Headers({ 'www-authenticate': bearer });
